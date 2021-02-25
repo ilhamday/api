@@ -1,18 +1,13 @@
 import requests
+import json
 
-parameter = {'rel_rhy': 'jungle'}
-request = requests.get('https://api.datamuse.com/words', parameter)
+# API that doesn't require authentication
+response = requests.get('http://api.open-notify.org/astros.json')
+print(response.status_code)
 
-# print(request.text)
-print(request.status_code)
+def jprint(obj):
+    # create a formatted string of the Python JSON object
+    text = json.dumps(obj, sort_keys=True, indent=4)
+    print(text)
 
-word_json = request.json()
-
-for wj in word_json:
-    print(f'The word match: {wj["word"]}')    
-    # print(wj)
-
-print(f'The first match: {word_json[0]["word"]}')
-print(word_json)
-# people = requests.get('http://api.open-notify.org/astros.json')
-# print(people.text)
+jprint(response.json())
