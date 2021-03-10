@@ -1,6 +1,11 @@
 import keyLastfm
 import requests
 import json
+import requests_cache
+import time
+from IPython.core.display import clear_output
+
+requests_cache.install_cache()
 
 # headers = {
 #     'user-agent': keyLastfm.USER_AGENT
@@ -41,23 +46,54 @@ def lastfm_get(payload):
     headers = {'user-agent': keyLastfm.USER_AGENT}
     url = 'http://ws.audioscrobbler.com/2.0/'
 
-    # Add API ket and format to the payload
+    # Add API key and format to the payload
     payload['api_key'] = keyLastfm.API_KEY
     payload['format'] = 'json'
 
     response = requests.get(url, headers=headers, params=payload)
     return response
 
-r = lastfm_get({
-    'method': 'chart.gettopartists'
-})
-
-print(r.status_code)
-
 def jprint(obj):
     # create a formatted string of the Python JSON object
     text = json.dumps(obj, sort_keys=True, indent=4)
     print(text)
 
-# jprint(r.json())
-jprint(r.json()['artists']['@attr'])
+
+responses = []
+
+page = 1
+total_pages = 10 # this is just a dummy number so the loop starts
+
+while page <= total_pages:
+    payload = {
+        'method': 'chart.gettopartists',
+        'limit': 500,
+        'page': page
+    }
+
+    # print some output
+    print(f'Requesting page {page}/{total_pages}')
+    # clear the output to make things neater
+    clear_output(wait = True)
+
+    # make the API call
+    response = lastfm_get(payload)
+
+    # if get an error, print the response and halt the loop
+    if response.status_code != 200:
+        print(response.text)
+        break
+
+    # extract pagination info
+    page = int(response.json()['artists']['@attr']['page'])
+    total_pages = int(response.json()['artists']['@attr']['totalPages'])
+
+    # append response
+    responses.append(response)
+
+    # if it's not a cached result, sleep
+    if not getattr(response, 'from_cache', False):
+        time.sleep(1.25)
+
+    # increment the page number
+    page += 1
