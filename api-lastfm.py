@@ -3,6 +3,7 @@ import requests
 import json
 import requests_cache
 import time
+import pandas as pd
 from IPython.core.display import clear_output
 
 requests_cache.install_cache()
@@ -72,7 +73,7 @@ while page <= total_pages:
     }
 
     # print some output
-    print(f'Requesting page {page}/{total_pages}')
+    # print(f'Requesting page {page}/{total_pages}')
     # clear the output to make things neater
     clear_output(wait = True)
 
@@ -97,3 +98,25 @@ while page <= total_pages:
 
     # increment the page number
     page += 1
+
+# Processing the data
+r0 = responses[0]
+r0_json = r0.json()
+r0_artists = r0_json['artists']['artist']
+r0_df = pd.DataFrame(r0_artists)
+# print(r0_df.head())
+
+# Turn the list of dataframes into a single dataframe
+frames = [pd.DataFrame(r.json()['artists']['artist']) for r in responses]
+artists = pd.concat(frames)
+
+artists = artists.drop('image', axis=1)
+artists = artists.drop_duplicates().reset_index(drop=True)
+
+# Convert listener and playcount colums to numeric
+artists[["playcount", "listeners"]] = artists[["playcount", "listeners"]].astype(int)
+
+# Sort by number of listeners
+artists = artists.sort_values("listeners", ascending=False)
+
+artists.to_csv('artists.csv', index=False)
